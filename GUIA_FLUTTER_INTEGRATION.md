@@ -3,6 +3,7 @@
 ## 📋 Resumen
 
 El sistema de alimentación ahora acepta **datos adicionales opcionales** desde Flutter que permiten:
+
 - ✅ Enviar datos que no son para el modelo pero enriquecen la información
 - ✅ Validar consistencia entre datos calculados en Flutter vs servidor
 - ✅ Obtener análisis más detallado y completo
@@ -11,6 +12,7 @@ El sistema de alimentación ahora acepta **datos adicionales opcionales** desde 
 ## 🔧 Modelo de Datos Actualizado
 
 ### Datos Principales (Requeridos)
+
 Estos son los datos que **SIEMPRE** debe enviar Flutter para el modelo:
 
 ```dart
@@ -33,6 +35,7 @@ final Map<String, dynamic> datosRequeridos = {
 ```
 
 ### Datos Adicionales (Opcionales)
+
 Estos datos pueden enviarse para enriquecer la información:
 
 ```dart
@@ -41,17 +44,17 @@ final Map<String, dynamic> datosOpcionales = {
   // Datos biológicos adicionales
   "Pesosiembra": 0.5,                  // double - Peso inicial de siembra
   "Densidadatarraya": 10.5,            // double - Densidad medida por atarraya
-  
+
   // Datos técnicos
   "TipoBalanceado": "Premium",         // String - Tipo de alimento
   "MarcaAA": "AquaTech",               // String - Marca de aireadores automáticos
-  
+
   // Datos pre-calculados en Flutter (para validación)
   "Incrementogr": 6.67,                // double - Incremento en gramos
   "Crecimientoactualgdia": 0.48,       // double - Crecimiento actual g/día
   "Pesoproyectadogdia": 33.0,          // double - Peso proyectado
   "Crecimientoesperadosem": 3.0,       // double - Crecimiento esperado semanal
-  
+
   // Metadatos de la aplicación
   "VersionApp": "1.2.3",               // String - Versión de la app Flutter
   "DispositivoId": "DEVICE_001",       // String - ID único del dispositivo
@@ -78,7 +81,7 @@ class PredictionRequestAlimentation {
   final int numeroAA;
   final int aireadores;
   final double alimentoactualkg;
-  
+
   // Datos adicionales (opcionales)
   final double? pesosiembra;
   final double? densidadatarraya;
@@ -90,7 +93,7 @@ class PredictionRequestAlimentation {
   final double? crecimientoesperadosem;
   final String? versionApp;
   final String? dispositivoId;
-  
+
   PredictionRequestAlimentation({
     // Requeridos
     required this.finca,
@@ -106,7 +109,7 @@ class PredictionRequestAlimentation {
     required this.numeroAA,
     required this.aireadores,
     required this.alimentoactualkg,
-    
+
     // Opcionales
     this.pesosiembra,
     this.densidadatarraya,
@@ -119,7 +122,7 @@ class PredictionRequestAlimentation {
     this.versionApp,
     this.dispositivoId,
   });
-  
+
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       // Datos principales
@@ -137,7 +140,7 @@ class PredictionRequestAlimentation {
       'Aireadores': aireadores,
       'Alimentoactualkg': alimentoactualkg,
     };
-    
+
     // Agregar datos opcionales solo si no son null
     if (pesosiembra != null) data['Pesosiembra'] = pesosiembra;
     if (densidadatarraya != null) data['Densidadatarraya'] = densidadatarraya;
@@ -149,7 +152,7 @@ class PredictionRequestAlimentation {
     if (crecimientoesperadosem != null) data['Crecimientoesperadosem'] = crecimientoesperadosem;
     if (versionApp != null) data['VersionApp'] = versionApp;
     if (dispositivoId != null) data['DispositivoId'] = dispositivoId;
-    
+
     return data;
   }
 }
@@ -160,7 +163,7 @@ class PredictionRequestAlimentation {
 ```dart
 class AlimentationService {
   static const String baseUrl = 'https://tu-servidor.com';
-  
+
   /// Envía datos de alimentación al servidor
   /// Puede incluir datos opcionales para enriquecer la respuesta
   static Future<Map<String, dynamic>> enviarDatosAlimentation({
@@ -175,7 +178,7 @@ class AlimentationService {
         },
         body: json.encode(request.toJson()),
       );
-      
+
       if (response.statusCode == 200) {
         final Map<String, dynamic> resultado = json.decode(response.body);
         return _procesarRespuestaExitosa(resultado);
@@ -186,7 +189,7 @@ class AlimentationService {
       throw Exception('Error de conexión: $e');
     }
   }
-  
+
   /// Procesa una respuesta exitosa del servidor
   static Map<String, dynamic> _procesarRespuestaExitosa(Map<String, dynamic> data) {
     // El servidor devuelve una estructura enriquecida
@@ -213,21 +216,21 @@ class AlimentationScreen extends StatefulWidget {
 
 class _AlimentationScreenState extends State<AlimentationScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controladores para datos principales
   final TextEditingController hectareasController = TextEditingController();
   final TextEditingController piscinasController = TextEditingController();
   // ... otros controladores
-  
+
   // Controladores para datos opcionales
   final TextEditingController pesosiembraController = TextEditingController();
   final TextEditingController densidadatarrayaController = TextEditingController();
   String? tipoBalanceadoSeleccionado;
   String? marcaAASeleccionada;
-  
+
   Future<void> _enviarDatos() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     try {
       // Crear request con datos principales
       final request = PredictionRequestAlimentation(
@@ -245,84 +248,84 @@ class _AlimentationScreenState extends State<AlimentationScreen> {
         numeroAA: int.parse(numeroAAController.text),
         aireadores: int.parse(aireadoresController.text),
         alimentoactualkg: double.parse(alimentokgController.text),
-        
+
         // Datos opcionales (pueden ser null)
-        pesosiembra: pesosiembraController.text.isNotEmpty 
-            ? double.parse(pesosiembraController.text) 
+        pesosiembra: pesosiembraController.text.isNotEmpty
+            ? double.parse(pesosiembraController.text)
             : null,
-        densidadatarraya: densidadatarrayaController.text.isNotEmpty 
-            ? double.parse(densidadatarrayaController.text) 
+        densidadatarraya: densidadatarrayaController.text.isNotEmpty
+            ? double.parse(densidadatarrayaController.text)
             : null,
         tipoBalanceado: tipoBalanceadoSeleccionado,
         marcaAA: marcaAASeleccionada,
-        
+
         // Metadatos de la app
         versionApp: await _getAppVersion(),
         dispositivoId: await _getDeviceId(),
-        
+
         // Datos pre-calculados (si ya los tienes en Flutter)
         incrementogr: _calcularIncrementoGramos(),
         crecimientoactualgdia: _calcularCrecimientoActual(),
       );
-      
+
       // Enviar al servidor
       final resultado = await AlimentationService.enviarDatosAlimentation(
         request: request,
       );
-      
+
       // Procesar respuesta
       _procesarResultado(resultado);
-      
+
     } catch (e) {
       _mostrarError('Error al procesar datos: $e');
     }
   }
-  
+
   void _procesarResultado(Map<String, dynamic> resultado) {
     if (resultado['status'] == 'success') {
       // ✅ Éxito - mostrar resultados
       _mostrarResultados(resultado);
-      
+
       // Verificar si hay análisis inteligente
       if (resultado['analisis'] != null) {
         _mostrarAnalisis(resultado['analisis']);
       }
-      
+
       // Verificar validaciones
       if (resultado['metadatos']?['validaciones'] != null) {
         _procesarValidaciones(resultado['metadatos']['validaciones']);
       }
-      
+
     } else {
       // ❌ Error - mostrar mensaje
       _mostrarError(resultado['mensaje']);
     }
   }
-  
+
   void _mostrarResultados(Map<String, dynamic> resultado) {
     final resultados = resultado['resultados'] as Map<String, dynamic>;
-    
+
     // Mostrar datos principales
     setState(() {
       // Actualizar UI con resultados del servidor
       _edadCultivo = resultados['edad_cultivo']?.toString() ?? '';
       _pesoActual = resultados['peso_actual_gdia']?.toString() ?? '';
       _crecimientoActual = resultados['crecim_actual_gdia']?.toString() ?? '';
-      
+
       // Recomendaciones semanales
       _lunesRecomendacion = resultados['lunes_dia1']?.toString() ?? '';
       _martesRecomendacion = resultados['martes_dia2']?.toString() ?? '';
       // ... otros días
-      
+
       // Datos adicionales del análisis
       _fcaCampo = resultados['fca_campo']?.toString() ?? '';
       _librasTotales = resultados['libras_totales_campo']?.toString() ?? '';
     });
-    
+
     // Mostrar diferencias si hay datos pre-calculados
     _mostrarDiferenciasCalculos(resultados);
   }
-  
+
   void _mostrarDiferenciasCalculos(Map<String, dynamic> resultados) {
     final diferencias = resultados['diferencias_flutter_vs_calculado'];
     if (diferencias != null && diferencias.isNotEmpty) {
@@ -336,7 +339,7 @@ class _AlimentationScreenState extends State<AlimentationScreen> {
             children: diferencias.entries.map<Widget>((entry) {
               final campo = entry.key;
               final datos = entry.value as Map<String, dynamic>;
-              
+
               return ListTile(
                 title: Text(campo.replaceAll('_', ' ').toUpperCase()),
                 subtitle: Column(
@@ -360,19 +363,19 @@ class _AlimentationScreenState extends State<AlimentationScreen> {
       );
     }
   }
-  
+
   void _mostrarAnalisis(Map<String, dynamic> analisis) {
     // Mostrar problemas identificados
     if (analisis['problems']?.isNotEmpty == true) {
       _mostrarAlerta('Problemas Identificados', analisis['problems']);
     }
-    
+
     // Mostrar recomendaciones
     if (analisis['recommendations']?.isNotEmpty == true) {
       _mostrarInfo('Recomendaciones', analisis['recommendations']);
     }
   }
-  
+
   // ... resto de la implementación del widget
 }
 ```
@@ -386,7 +389,7 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
   "finca": "CAMANOVILLO",
   "mensaje": "Predicción de alimentación calculada exitosamente",
   "status": "success",
-  
+
   "datos_enviados": {
     "principales": {
       // Datos principales que se usaron para el modelo
@@ -395,7 +398,7 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
       // Datos adicionales enviados desde Flutter
     }
   },
-  
+
   "resultados": {
     // Todos los cálculos y recomendaciones
     "edad_cultivo": 62,
@@ -404,11 +407,11 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
     "lunes_dia1": 450,
     "martes_dia2": 465,
     // ... más resultados
-    
+
     // Datos adicionales procesados
     "tipo_balanceado": "Premium",
     "marca_aa": "AquaTech",
-    
+
     // Comparaciones Flutter vs Calculado
     "diferencias_flutter_vs_calculado": {
       "incremento_gr": {
@@ -418,7 +421,7 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
         "diferencia_porcentaje": 0.0
       }
     },
-    
+
     // Validaciones cruzadas
     "validaciones_cruzadas": {
       "fechas": {
@@ -428,7 +431,7 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
       }
     }
   },
-  
+
   "analisis": {
     "problems": [
       // Lista de problemas identificados automáticamente
@@ -440,7 +443,7 @@ El servidor devuelve una respuesta enriquecida con la siguiente estructura:
       // Observaciones generales
     ]
   },
-  
+
   "metadatos": {
     "version_app": "1.2.3",
     "dispositivo_id": "DEVICE_001",
