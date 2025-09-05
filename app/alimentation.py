@@ -208,10 +208,24 @@ def procesar_prediccion_alimentation(request: PredictionRequestAlimentation):
         if datos_adicionales['Pesosiembra'] is not None:
             calculator.set_controller_value(
                 'peso_siembra', str(datos_adicionales['Pesosiembra']))
+        else:
+            # Valor por defecto para peso_siembra si no se proporciona
+            calculator.set_controller_value('peso_siembra', '1.0')
 
         if datos_adicionales['Densidadatarraya'] is not None:
             calculator.set_controller_value(
                 'densidad_atarraya', str(datos_adicionales['Densidadatarraya']))
+        else:
+            # Valor por defecto para densidad_atarraya si no se proporciona
+            calculator.set_controller_value('densidad_atarraya', '10.0')
+
+        # Establecer otros valores por defecto necesarios para los cálculos
+        if calculator.get_controller_value('densidad_consumo_im2') == '':
+            calculator.set_controller_value('densidad_consumo_im2', '0.0')
+        if calculator.get_controller_value('peso_proyectado_gdia') == '':
+            calculator.set_controller_value('peso_proyectado_gdia', '0.0')
+        if calculator.get_controller_value('crecimiento_esperado_sem') == '':
+            calculator.set_controller_value('crecimiento_esperado_sem', '0.0')
 
         # Calcular todos los valores
         calculator.calcular_todos_los_valores()
@@ -428,15 +442,23 @@ class AquacultureAnalysisEngine:
         """Convierte los resultados a valores numéricos para análisis"""
         parsed = {}
         for key, value in results.items():
-            if isinstance(value, str):
+            if value is None:
+                parsed[key] = 0.0
+            elif isinstance(value, str):
                 # Eliminar comas y convertir a float
                 cleaned = value.replace(',', '').strip()
                 try:
                     parsed[key] = float(cleaned) if cleaned else 0.0
                 except ValueError:
                     parsed[key] = 0.0
-            else:
+            elif isinstance(value, (int, float)):
                 parsed[key] = float(value)
+            else:
+                # Para cualquier otro tipo, intentar convertir a string primero
+                try:
+                    parsed[key] = float(str(value))
+                except (ValueError, TypeError):
+                    parsed[key] = 0.0
         return parsed
 
     def _analyze_growth(self, results: Dict[str, float], analysis: Dict[str, List[str]]):
@@ -702,14 +724,17 @@ class AquacultureCalculator:
         if self.on_state_changed:
             self.on_state_changed()
 
-    def parse_formatted_number(self, value_str: str) -> float:
+    def parse_formatted_number(self, value_str) -> float:
         """Convierte una cadena formateada a número float"""
-        if not value_str or value_str == '':
+        if value_str is None or not value_str or value_str == '':
             return 0.0
         try:
-            # Eliminar comas y convertir a float
-            return float(value_str.replace(',', ''))
-        except ValueError:
+            # Si es un número, convertir directamente
+            if isinstance(value_str, (int, float)):
+                return float(value_str)
+            # Si es string, eliminar comas y convertir a float
+            return float(str(value_str).replace(',', ''))
+        except (ValueError, TypeError):
             return 0.0
 
     def format_number(self, value: float) -> str:
@@ -726,10 +751,17 @@ class AquacultureCalculator:
     def calcular_edad_cultivo(self):
         """Calcula la edad del cultivo"""
         try:
-            fecha_siembra_str = self.get_controller_value(
-                'fecha_siembra').strip()
-            fecha_muestreo_str = self.get_controller_value(
-                'fecha_muestreo').strip()
+            fecha_siembra_str = self.get_controller_value('fecha_siembra')
+            fecha_muestreo_str = self.get_controller_value('fecha_muestreo')
+
+            # Manejar valores None
+            if fecha_siembra_str is None:
+                fecha_siembra_str = ""
+            if fecha_muestreo_str is None:
+                fecha_muestreo_str = ""
+
+            fecha_siembra_str = str(fecha_siembra_str).strip()
+            fecha_muestreo_str = str(fecha_muestreo_str).strip()
 
             if not fecha_siembra_str or not fecha_muestreo_str:
                 print("⚠️ Error: Una o ambas fechas están vacías.")
@@ -768,7 +800,10 @@ class AquacultureCalculator:
 
     def validar_y_actualizar_fecha(self, controller_key: str):
         """Valida y actualiza una fecha"""
-        input_text = self.get_controller_value(controller_key).strip()
+        input_text = self.get_controller_value(controller_key)
+        if input_text is None:
+            input_text = ""
+        input_text = str(input_text).strip()
         if re.match(r'^\d{2}/\d{2}/\d{4}$', input_text):
             try:
                 parsed_date = datetime.strptime(input_text, '%d/%m/%Y')
@@ -1073,14 +1108,21 @@ class AquacultureCalculator:
 
     def diferencia_campo_biologo(self):
         """Calcula la diferencia entre campo y biólogo"""
-        consumo_text = self.get_controller_value(
-            'densidad_consumo_im2').strip()
-        biologo_text = self.get_controller_value(
-            'densidad_biologo_indm2').strip()
+        consumo_text = self.get_controller_value('densidad_consumo_im2')
+        biologo_text = self.get_controller_value('densidad_biologo_indm2')
+
+        # Manejar valores None
+        if consumo_text is None:
+            consumo_text = "0"
+        if biologo_text is None:
+            biologo_text = "0"
+
+        consumo_text = str(consumo_text).strip()
+        biologo_text = str(biologo_text).strip()
 
         try:
-            densidad_consumo = float(consumo_text)
-            densidad_biologo = float(biologo_text)
+            densidad_consumo = self.parse_formatted_number(consumo_text)
+            densidad_biologo = self.parse_formatted_number(biologo_text)
 
             if densidad_biologo != 0:
                 diferencia = ((densidad_consumo / densidad_biologo) - 1) * 100
@@ -1089,7 +1131,7 @@ class AquacultureCalculator:
                     'diferencia_campo_biologo', str(porcentaje))
             else:
                 self.set_controller_value('diferencia_campo_biologo', "0")
-        except (ValueError, TypeError):
+        except (ValueError, TypeError, AttributeError):
             self.set_controller_value('diferencia_campo_biologo', "0")
 
     def calcular_crecimiento_esperado(self, peso_proyectado: float):
