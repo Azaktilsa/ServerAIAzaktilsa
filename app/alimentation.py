@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 # Modelos de datos para FastAPI
 class PredictionRequestAlimentation(BaseModel):
+    # Datos principales para el modelo (requeridos)
     finca: str
     Hectareas: float
     Piscinas: int
@@ -28,6 +29,23 @@ class PredictionRequestAlimentation(BaseModel):
     numeroAA: int
     Aireadores: int
     Alimentoactualkg: float
+
+    # Datos adicionales opcionales para completar cálculos
+    Pesosiembra: Optional[float] = None
+    Densidadatarraya: Optional[float] = None
+    TipoBalanceado: Optional[str] = None
+    MarcaAA: Optional[str] = None
+
+    # Campos calculados que pueden venir precalculados desde Flutter
+    Incrementogr: Optional[float] = None
+    Crecimientoactualgdia: Optional[float] = None
+    Pesoproyectadogdia: Optional[float] = None
+    Crecimientoesperadosem: Optional[float] = None
+
+    # Datos de control y validación
+    FechaCalculada: Optional[bool] = None
+    VersionApp: Optional[str] = None
+    DispositivoId: Optional[str] = None
 
 
 # Rutas de los archivos (modelo y scaler por finca)
@@ -130,7 +148,7 @@ def procesar_prediccion_alimentation(request: PredictionRequestAlimentation):
         # Cargar datos de referencia
         calculator.fetch_data_tabla3()
 
-        # Convertir request a diccionario para compatibilidad
+        # Datos principales para el modelo (requeridos)
         input_data = {
             "Hectareas": request.Hectareas,
             "Piscinas": request.Piscinas,
@@ -146,7 +164,21 @@ def procesar_prediccion_alimentation(request: PredictionRequestAlimentation):
             "Alimentoactualkg": request.Alimentoactualkg,
         }
 
-        # Establecer valores en controladores
+        # Datos adicionales para completar información (opcionales)
+        datos_adicionales = {
+            "Pesosiembra": getattr(request, 'Pesosiembra', None),
+            "Densidadatarraya": getattr(request, 'Densidadatarraya', None),
+            "TipoBalanceado": getattr(request, 'TipoBalanceado', None),
+            "MarcaAA": getattr(request, 'MarcaAA', None),
+            "Incrementogr": getattr(request, 'Incrementogr', None),
+            "Crecimientoactualgdia": getattr(request, 'Crecimientoactualgdia', None),
+            "Pesoproyectadogdia": getattr(request, 'Pesoproyectadogdia', None),
+            "Crecimientoesperadosem": getattr(request, 'Crecimientoesperadosem', None),
+            "VersionApp": getattr(request, 'VersionApp', None),
+            "DispositivoId": getattr(request, 'DispositivoId', None),
+        }
+
+        # Establecer valores principales en controladores
         calculator.set_controller_value(
             'hectareas', str(input_data['Hectareas']))
         calculator.set_controller_value(
@@ -172,14 +204,56 @@ def procesar_prediccion_alimentation(request: PredictionRequestAlimentation):
         calculator.set_controller_value(
             'alimento_actual_kg', str(input_data['Alimentoactualkg']))
 
+        # Establecer datos adicionales si están disponibles
+        if datos_adicionales['Pesosiembra'] is not None:
+            calculator.set_controller_value(
+                'peso_siembra', str(datos_adicionales['Pesosiembra']))
+
+        if datos_adicionales['Densidadatarraya'] is not None:
+            calculator.set_controller_value(
+                'densidad_atarraya', str(datos_adicionales['Densidadatarraya']))
+
         # Calcular todos los valores
         calculator.calcular_todos_los_valores()
 
-        # Generar resultados finales
-        resultados = calculator.generar_resultados_finales(input_data)
+        # Generar resultados finales incluyendo datos adicionales
+        resultados = calculator.generar_resultados_finales_extendidos(
+            input_data, datos_adicionales)
 
         # Realizar análisis inteligente
         analyzer = AquacultureAnalysisEngine()
+        analysis = analyzer.analyze_results(resultados)
+
+        return {
+            "finca": request.finca,
+            "mensaje": "Predicción de alimentación calculada exitosamente",
+            "datos_enviados": {
+                "principales": input_data,
+                "adicionales": datos_adicionales
+            },
+            "resultados": resultados,
+            "analisis": analysis,
+            "metadatos": {
+                "version_app": datos_adicionales.get('VersionApp'),
+                "dispositivo_id": datos_adicionales.get('DispositivoId'),
+                "timestamp": datetime.now().isoformat(),
+                "campos_calculados": calculator.get_campos_calculados(),
+                "validaciones": calculator.get_validaciones()
+            },
+            "status": "success"
+        }
+
+    except Exception as e:
+        return {
+            "finca": request.finca,
+            "mensaje": f"Error en el cálculo de alimentación: {str(e)}",
+            "error": str(e),
+            "datos_recibidos": {
+                "principales": input_data if 'input_data' in locals() else None,
+                "adicionales": datos_adicionales if 'datos_adicionales' in locals() else None
+            },
+            "status": "error"
+        }
         analysis = analyzer.analyze_results(resultados)
 
         return {
@@ -964,7 +1038,6 @@ class AquacultureCalculator:
                     peso_encontrado = peso
                     bw_cosechas = bw_value
 
-            # Dividir por 100 como en Dart: bwCosechasDecimal /= 100;
             bw_cosechas_decimal = bw_cosechas / 100
 
             if bw_cosechas_decimal == 0:
@@ -972,7 +1045,7 @@ class AquacultureCalculator:
                 return
 
             lunes_dia1 = ((peso_actual_g / 1000) * ((densidad_biologo *
-                                                     10000) * hectareaje)) * bw_cosechas_decimal
+                          10000) * hectareaje)) * bw_cosechas_decimal
             resultado_redondeado = round(lunes_dia1 / 25) * 25
 
             result_str = "25" if math.isnan(lunes_dia1) or math.isinf(
@@ -1183,10 +1256,8 @@ class AquacultureCalculator:
         """Calcula FCA Campo"""
         acumulado = self.parse_formatted_number(
             self.get_controller_value('acumulado_actual_lbs'))
-        print(f"Acumulado actual LBS (parseado): {acumulado}")
         libras_totales_campo = self.parse_formatted_number(
             self.get_controller_value('libras_totales_campo'))
-        print(f"Libras totales campo (parseado): {libras_totales_campo}")
 
         if libras_totales_campo == 0 or acumulado == 0:
             self.set_controller_value('fca_campo', "0.00")
@@ -1194,16 +1265,13 @@ class AquacultureCalculator:
 
         fca_campo = acumulado / libras_totales_campo
         self.set_controller_value('fca_campo', f"{fca_campo:.2f}")
-        print(f"FCA Campo calculado: {fca_campo}")
 
     def fca_consumo(self):
         """Calcula FCA Consumo"""
         acumulado = self.parse_formatted_number(
             self.get_controller_value('acumulado_actual_lbs'))
-        print(f"Acumulado actual LBS (parseado): {acumulado}")
         libras_totales_consumo = self.parse_formatted_number(
             self.get_controller_value('libras_totales_consumo'))
-        print(f"Libras totales consumo (parseado): {libras_totales_consumo}")
 
         if libras_totales_consumo == 0 or acumulado == 0:
             self.set_controller_value('fca_consumo', "0.00")
@@ -1211,7 +1279,6 @@ class AquacultureCalculator:
 
         fca_consumo = acumulado / libras_totales_consumo
         self.set_controller_value('fca_consumo', f"{fca_consumo:.2f}")
-        print(f"FCA Consumo calculado: {fca_consumo}")
 
     def calcular_rendimiento_lbs_saco(self):
         """Calcula el rendimiento en libras por saco"""
@@ -1481,7 +1548,7 @@ class AquacultureCalculator:
             'fecha_muestreo': input_data.get('Fechademuestreo', ''),
             'edad_cultivo': edad_cultivo,
             'crecim_actual_gdia': crecimiento_actual,
-            'peso_siembra': peso_anterior,
+            'peso_siembra': self.get_controller_value('peso_siembra'),
             'peso_actual_gdia': peso_actual,
             'peso_proyectado_gdia': self.get_controller_value('peso_proyectado_gdia'),
             'crecimiento_esperado_sem': self.get_controller_value('crecimiento_esperado_sem'),
@@ -1523,6 +1590,277 @@ class AquacultureCalculator:
         }
 
         return resultados_finales
+
+    def generar_resultados_finales_extendidos(self, input_data, datos_adicionales):
+        """Genera el diccionario final con todos los resultados incluyendo datos adicionales"""
+        # Primero calculamos todos los valores
+        self.calcular_todos_los_valores()
+
+        # Obtener resultados básicos
+        resultados_base = self.generar_resultados_finales(input_data)
+
+        # Agregar datos adicionales enviados desde Flutter
+        resultados_extendidos = {
+            **resultados_base,
+            # Datos adicionales del request
+            'peso_siembra_flutter': datos_adicionales.get('Pesosiembra'),
+            'densidad_atarraya_flutter': datos_adicionales.get('Densidadatarraya'),
+            'tipo_balanceado': datos_adicionales.get('TipoBalanceado'),
+            'marca_aa': datos_adicionales.get('MarcaAA'),
+            'incremento_gr_flutter': datos_adicionales.get('Incrementogr'),
+            'crecimiento_actual_flutter': datos_adicionales.get('Crecimientoactualgdia'),
+            'peso_proyectado_flutter': datos_adicionales.get('Pesoproyectadogdia'),
+            'crecimiento_esperado_flutter': datos_adicionales.get('Crecimientoesperadosem'),
+            # Campos calculados adicionales
+            'diferencias_flutter_vs_calculado': self.calcular_diferencias_flutter(datos_adicionales),
+            'validaciones_cruzadas': self.validar_datos_cruzados(input_data, datos_adicionales),
+            'metricas_adicionales': self.calcular_metricas_adicionales(),
+        }
+
+        return resultados_extendidos
+
+    def calcular_diferencias_flutter(self, datos_adicionales):
+        """Calcula diferencias entre valores enviados desde Flutter y los calculados"""
+        diferencias = {}
+
+        # Comparar peso siembra si está disponible
+        if datos_adicionales.get('Pesosiembra') is not None:
+            peso_siembra_calculado = self.parse_formatted_number(
+                self.get_controller_value('peso_siembra'))
+            if peso_siembra_calculado > 0:
+                diferencias['peso_siembra'] = {
+                    'flutter': datos_adicionales['Pesosiembra'],
+                    'calculado': peso_siembra_calculado,
+                    'diferencia_abs': abs(datos_adicionales['Pesosiembra'] - peso_siembra_calculado),
+                    'diferencia_porcentaje': abs(datos_adicionales['Pesosiembra'] - peso_siembra_calculado) / peso_siembra_calculado * 100 if peso_siembra_calculado > 0 else 0
+                }
+
+        # Comparar incremento en gramos
+        if datos_adicionales.get('Incrementogr') is not None:
+            incremento_calculado = self.parse_formatted_number(
+                self.get_controller_value('incremento_gr'))
+            if incremento_calculado > 0:
+                diferencias['incremento_gr'] = {
+                    'flutter': datos_adicionales['Incrementogr'],
+                    'calculado': incremento_calculado,
+                    'diferencia_abs': abs(datos_adicionales['Incrementogr'] - incremento_calculado),
+                    'diferencia_porcentaje': abs(datos_adicionales['Incrementogr'] - incremento_calculado) / incremento_calculado * 100 if incremento_calculado > 0 else 0
+                }
+
+        return diferencias
+
+    def validar_datos_cruzados(self, input_data, datos_adicionales):
+        """Valida la consistencia entre datos principales y adicionales"""
+        validaciones = {}
+
+        # Validar fechas
+        try:
+            fecha_siembra = datetime.strptime(
+                input_data['Fechadesiembra'], '%d/%m/%Y')
+            fecha_muestreo = datetime.strptime(
+                input_data['Fechademuestreo'], '%d/%m/%Y')
+            edad_calculada = (fecha_muestreo - fecha_siembra).days + 1
+
+            validaciones['fechas'] = {
+                'edad_enviada': input_data['Edaddelcultivo'],
+                'edad_calculada': edad_calculada,
+                'diferencia_dias': abs(input_data['Edaddelcultivo'] - edad_calculada),
+                'es_consistente': abs(input_data['Edaddelcultivo'] - edad_calculada) <= 1
+            }
+        except Exception as e:
+            validaciones['fechas'] = {'error': str(e)}
+
+        # Validar densidades
+        if datos_adicionales.get('Densidadatarraya') is not None:
+            densidad_biologo = input_data['Densidadbiologoindm2']
+            densidad_atarraya = datos_adicionales['Densidadatarraya']
+
+            validaciones['densidades'] = {
+                'densidad_biologo': densidad_biologo,
+                'densidad_atarraya': densidad_atarraya,
+                'diferencia_abs': abs(densidad_biologo - densidad_atarraya),
+                'diferencia_porcentaje': abs(densidad_biologo - densidad_atarraya) / densidad_biologo * 100 if densidad_biologo > 0 else 0,
+                'diferencia_aceptable': abs(densidad_biologo - densidad_atarraya) / densidad_biologo * 100 <= 15 if densidad_biologo > 0 else False
+            }
+
+        return validaciones
+
+    def calcular_metricas_adicionales(self):
+        """Calcula métricas adicionales útiles para el análisis"""
+        metricas = {}
+
+        try:
+            # Eficiencia de aireación
+            libras_totales = self.parse_formatted_number(
+                self.get_controller_value('libras_totales_campo'))
+            aireadores = self.parse_formatted_number(
+                self.get_controller_value('h_aireadores_mecanicos'))
+            hectareas = self.parse_formatted_number(
+                self.get_controller_value('hectareas'))
+
+            if aireadores > 0 and hectareas > 0:
+                metricas['eficiencia_aireacion'] = {
+                    'libras_por_aireador': libras_totales / aireadores,
+                    'aireadores_por_hectarea': aireadores / hectareas,
+                    'libras_por_hectarea': libras_totales / hectareas
+                }
+
+            # Eficiencia alimenticia
+            alimento_kg = self.parse_formatted_number(
+                self.get_controller_value('alimento_actual_kg'))
+            fca_campo = self.parse_formatted_number(
+                self.get_controller_value('fca_campo'))
+
+            if alimento_kg > 0 and libras_totales > 0:
+                biomasa_kg = libras_totales * 0.453592  # lbs a kg
+                metricas['eficiencia_alimenticia'] = {
+                    'kg_alimento_por_kg_biomasa': alimento_kg / biomasa_kg if biomasa_kg > 0 else 0,
+                    'porcentaje_biomasa_alimentacion': (alimento_kg / biomasa_kg * 100) if biomasa_kg > 0 else 0,
+                    'eficiencia_conversion': 1 / fca_campo if fca_campo > 0 else 0
+                }
+
+            # Productividad por unidad de área
+            peso_actual = self.parse_formatted_number(
+                self.get_controller_value('peso_actual_gdia'))
+            densidad = self.parse_formatted_number(
+                self.get_controller_value('densidad_biologo_indm2'))
+
+            if peso_actual > 0 and densidad > 0:
+                metricas['productividad'] = {
+                    'gramos_por_m2': peso_actual * densidad,
+                    'kg_por_hectarea': peso_actual * densidad * 10,  # 10000 m2/ha / 1000 g/kg
+                    'individuos_por_m2': densidad,
+                    'peso_promedio_g': peso_actual
+                }
+
+        except Exception as e:
+            metricas['error'] = str(e)
+
+        return metricas
+
+    def get_campos_calculados(self):
+        """Retorna lista de campos que fueron calculados por el sistema"""
+        campos_calculados = [
+            'edad_cultivo', 'incremento_gr', 'crecim_actual_gdia',
+            'peso_proyectado_gdia', 'crecimiento_esperado_sem',
+            'densidad_consumo_im2', 'kg_100mil', 'sacos_actuales',
+            'lunes_dia1', 'martes_dia2', 'miercoles_dia3', 'jueves_dia4',
+            'viernes_dia5', 'sabado_dia6', 'domingo_dia7',
+            'recomendation_semana', 'acumulado_semanal',
+            'aireadores_diesel', 'capacidad_carga_aireaccion',
+            'lbs_ha_actual_campo', 'lbs_ha_consumo',
+            'libras_totales_campo', 'libras_totales_consumo',
+            'fca_campo', 'fca_consumo', 'diferencia_campo_biologo',
+            'rendimiento_lbs_saco', 'recomendacion_lbs_ha',
+            'libras_totales_por_aireador'
+        ]
+
+        return {campo: self.get_controller_value(campo) for campo in campos_calculados}
+
+    def get_validaciones(self):
+        """Retorna validaciones de los datos procesados"""
+        validaciones = {
+            'fechas_validas': self._validar_fechas(),
+            'valores_numericos_validos': self._validar_valores_numericos(),
+            'rangos_aceptables': self._validar_rangos(),
+            'consistencia_datos': self._validar_consistencia()
+        }
+
+        return validaciones
+
+    def _validar_fechas(self):
+        """Valida que las fechas sean coherentes"""
+        try:
+            fecha_siembra = self.get_controller_value('fecha_siembra')
+            fecha_muestreo = self.get_controller_value('fecha_muestreo')
+
+            if not fecha_siembra or not fecha_muestreo:
+                return {'valido': False, 'error': 'Fechas faltantes'}
+
+            fecha_s = datetime.strptime(fecha_siembra, '%d/%m/%Y')
+            fecha_m = datetime.strptime(fecha_muestreo, '%d/%m/%Y')
+
+            if fecha_m < fecha_s:
+                return {'valido': False, 'error': 'Fecha muestreo anterior a siembra'}
+
+            diferencia = (fecha_m - fecha_s).days
+            if diferencia > 200:  # Ciclo muy largo
+                return {'valido': False, 'advertencia': 'Ciclo excesivamente largo'}
+
+            return {'valido': True, 'dias_cultivo': diferencia + 1}
+
+        except Exception as e:
+            return {'valido': False, 'error': f'Error en fechas: {str(e)}'}
+
+    def _validar_valores_numericos(self):
+        """Valida que los valores numéricos sean razonables"""
+        validaciones = {}
+
+        # Validar peso actual
+        peso_actual = self.parse_formatted_number(
+            self.get_controller_value('peso_actual_gdia'))
+        validaciones['peso_actual'] = {
+            'valor': peso_actual,
+            'valido': 0.1 <= peso_actual <= 100,
+            'rango_esperado': '0.1-100 gramos'
+        }
+
+        # Validar densidad
+        densidad = self.parse_formatted_number(
+            self.get_controller_value('densidad_biologo_indm2'))
+        validaciones['densidad'] = {
+            'valor': densidad,
+            'valido': 1 <= densidad <= 50,
+            'rango_esperado': '1-50 ind/m²'
+        }
+
+        # Validar FCA
+        fca = self.parse_formatted_number(
+            self.get_controller_value('fca_campo'))
+        validaciones['fca'] = {
+            'valor': fca,
+            'valido': 0.5 <= fca <= 3.0,
+            'rango_esperado': '0.5-3.0'
+        }
+
+        return validaciones
+
+    def _validar_rangos(self):
+        """Valida que los valores estén en rangos aceptables"""
+        validaciones = {}
+
+        # Validar crecimiento
+        crecimiento = self.parse_formatted_number(
+            self.get_controller_value('crecim_actual_gdia'))
+        validaciones['crecimiento'] = {
+            'valor': crecimiento,
+            'optimo': 0.8 <= crecimiento <= 1.5,
+            'aceptable': 0.5 <= crecimiento <= 2.0,
+            'rango_optimo': '0.8-1.5 g/día'
+        }
+
+        return validaciones
+
+    def _validar_consistencia(self):
+        """Valida la consistencia interna de los datos"""
+        validaciones = {}
+
+        # Consistencia entre densidades
+        densidad_biologo = self.parse_formatted_number(
+            self.get_controller_value('densidad_biologo_indm2'))
+        densidad_consumo = self.parse_formatted_number(
+            self.get_controller_value('densidad_consumo_im2'))
+
+        if densidad_biologo > 0 and densidad_consumo > 0:
+            diferencia_pct = abs(densidad_biologo -
+                                 densidad_consumo) / densidad_biologo * 100
+            validaciones['densidades'] = {
+                'diferencia_porcentaje': diferencia_pct,
+                'consistente': diferencia_pct <= 20,
+                'limite_aceptable': '20%'
+            }
+
+        return validaciones
 
     def mostrar_resultados(self, input_data):
         """Muestra los resultados en formato DataFrame"""
