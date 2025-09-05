@@ -36,7 +36,7 @@ gcloud run deploy azaktilsadocker \
   --set-env-vars SCALER_PATH_SUFAAZA=gs://azaktilsa_fincas/scaler/scaler_SUFAAZA.pkl \
   --set-env-vars MODELO_PATH_TIERRAVID=gs://azaktilsa_fincas/model/modelo_TIERRAVID_random_forest.pkl \
   --set-env-vars SCALER_PATH_TIERRAVID=gs://azaktilsa_fincas/scaler/scaler_TIERRAVID.pkl \
-  --set-env-vars RENDIMIENTO_PATH=https://azaktilza-default-rtdb.firebaseio.com/Empresas/TerrawaSufalyng/Rendimiento.json \
+  --set-env-vars RENDIMIENTO_PATH=gs://azaktilsa_fincas/Data/Rendimiento.json \
   --set-env-vars PESOS_ALIMENTATION=gs://azaktilsa_fincas/Data/pesos_alimento.json \
   --set-env-vars TERRAIN=gs://azaktilsa_fincas/Data/Terrain.json \
   --set-env-vars MODELO_ALIMENTATION_PATH_CAMANOVILLO=gs://azaktilsa_fincas/modelalimentation/modelo_CAMANOVILLO_ensemble.pkl \

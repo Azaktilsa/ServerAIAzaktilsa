@@ -1170,13 +1170,17 @@ class AquacultureCalculator:
 
     # Métodos de cálculo para días de la semana
 
-    def _calcular_logic(self, peso_project: float, hectareaje: float, densidad_biologo: float) -> float:
+    def _calcular_logic(self, peso_project: float, hectareaje: float,
+                        densidad_biologo: float, lookup_table: list) -> float:
         """Lógica compartida para cálculos de días de la semana"""
         # Buscar el valor de 'BWCosechas' (VLOOKUP)
         peso_encontrado = 0.0
         bw_cosechas = 0.0
 
-        for peso, bw_value in self.model.referencia_tabla.items():
+        for item in lookup_table:
+            peso = float(item.get('Pesos', 0))
+            bw_value = float(item.get('BWCosechas', 0))
+
             if peso <= peso_project and peso > peso_encontrado:
                 peso_encontrado = peso
                 bw_cosechas = bw_value
@@ -1246,27 +1250,57 @@ class AquacultureCalculator:
 
     def calcular_domingo_dia7(self):
         """Calcula el valor para domingo día 7"""
+        # 1. Validar y Analizar los Datos de Entrada.
+        peso_project = self.parse_formatted_number(
+            self.get_controller_value('peso_proyectado_gdia'))
+        hectareaje = self.parse_formatted_number(
+            self.get_controller_value('hectareas'))
+        densidad_biologo = self.parse_formatted_number(
+            self.get_controller_value('densidad_biologo_indm2'))
+
+        if (peso_project is None or
+            hectareaje is None or
+            densidad_biologo is None or
+            peso_project <= 0 or
+            hectareaje <= 0 or
+                densidad_biologo <= 0):
+            self.set_controller_value('domingo_dia7', "Datos inválidos")
+            return
+
         try:
-            peso_project = self.parse_formatted_number(
-                self.get_controller_value('peso_proyectado_gdia'))
-            hectareaje = self.parse_formatted_number(
-                self.get_controller_value('hectareas'))
-            densidad_biologo = self.parse_formatted_number(
-                self.get_controller_value('densidad_biologo_indm2'))
-
-            if not peso_project or not hectareaje or not densidad_biologo or peso_project <= 0 or hectareaje <= 0 or densidad_biologo <= 0:
-                self.set_controller_value('domingo_dia7', "Datos inválidos")
-                return
-
+            # 2. Obtener Datos de la Base de Datos.
+            # En Python usamos self.model.referencia_tabla en lugar de Firebase
             if not self.model.referencia_tabla:
                 self.set_controller_value('domingo_dia7', "No hay datos")
                 return
 
+            # 3. Procesar los Datos Brutos.
+            # Convertir self.model.referencia_tabla a formato similar a lookupData
+            lookup_data = []
+            for peso, bw_value in self.model.referencia_tabla.items():
+                lookup_data.append({
+                    'Pesos': peso,
+                    'BWCosechas': bw_value
+                })
+
+            if not lookup_data:
+                self.set_controller_value(
+                    'domingo_dia7', "Formato de datos inválido")
+                return
+
+            # 4. Realizar el cálculo llamando a la nueva función.
             resultado = self._calcular_logic(
-                peso_project, hectareaje, densidad_biologo)
+                peso_project=peso_project,
+                hectareaje=hectareaje,
+                densidad_biologo=densidad_biologo,
+                lookup_table=lookup_data
+            )
+
+            # 5. Actualizar la Interfaz de Usuario.
             self.set_controller_value('domingo_dia7', str(int(resultado)))
 
         except Exception as e:
+            # 6. Manejar errores.
             print(f"Error al calcular DomingoDia7: {e}")
             self.set_controller_value('domingo_dia7', "Error")
 
