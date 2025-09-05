@@ -18,6 +18,7 @@ MODELO_PATH_TIERRAVID: "gs://azaktilsa_fincas/model/modelo_TIERRAVID_random_fore
 SCALER_PATH_TIERRAVID: "gs://azaktilsa_fincas/scaler/scaler_TIERRAVID.pkl"
 RENDIMIENTO_PATH: "https://azaktilza-default-rtdb.firebaseio.com/Empresas/TerrawaSufalyng/Rendimiento.json"
 PESOS_ALIMENTATION: "gs://azaktilsa_fincas/Data/pesos_alimento.json"
+TERRAIN: "gs://azaktilsa_fincas/Data/Terrain.json"
 MODELO_ALIMENTATION_PATH_CAMANOVILLO: "gs://azaktilsa_fincas/modelalimentation/modelo_CAMANOVILLO_ensemble.pkl"
 SCALER_ALIMENTATION_PATH_CAMANOVILLO: "gs://azaktilsa_fincas/scaleralimentation/scaler_CAMANOVILLO.pkl"
 SELECTOR_ALIMENTATION_PATH_CAMANOVILLO: "gs://azaktilsa_fincas/selector/selector_CAMANOVILLO.pkl"

@@ -42,6 +42,18 @@ async def index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 
+@app.get("/health")
+async def health_check():
+    """Endpoint simple de health check para contenedores"""
+    return {"status": "healthy", "message": "API funcionando correctamente"}
+
+
+@app.get("/api/system/health")
+async def system_health_check():
+    """Endpoint de health check del sistema para contenedores"""
+    return {"status": "healthy", "message": "Sistema funcionando"}
+
+
 @app.get("/stats")
 async def get_stats():
     """Endpoint para obtener estadísticas de la aplicación"""

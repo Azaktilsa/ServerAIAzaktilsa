@@ -63,6 +63,14 @@ gcloud run deploy --image gcr.io/azaktilza-470117/azaktilsadocker:latest --platf
 
 azaktilsadocker
 
+## Si nada de lo anterior funciona utilizar esto para regenerar la imagen Docker y volverla a desplegar
+
+    ´´´
+    docker build -t gcr.io/azaktilza-470117/azaktilsadocker:latest .
+
+    docker push gcr.io/azaktilza-470117/azaktilsadocker:latest
+    ´´´
+
 ## Run Server
 
 python app.py

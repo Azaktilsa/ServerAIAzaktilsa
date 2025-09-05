@@ -1,0 +1,152 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: azaktilsadocker
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+      - image: gcr.io/azaktilza-470117/azaktilsadocker:latest
+        env:
+        # Basic Configuration
+        - name: EMAIL_USER
+          value: "terrawasuffa@gmail.com"
+        - name: EMAIL_PASS
+          value: "kkkgpklzlxcsgddl"
+        - name: GOOGLE_CLOUD_PROJECT_ID
+          value: "azaktilza-470117"
+        - name: GCS_BUCKET_NAME
+          value: "azaktilsa_fincas"
+        - name: ENVIRONMENT
+          value: "development"
+        - name: DEBUG
+          value: "true"
+        
+        # Firebase Configuration
+        - name: FIREBASE_API_KEY
+          value: "AIzaSyA9hinztfYgVtVs7ReqNI0kVLkPIUz3fUg"
+        - name: FIREBASE_AUTH_DOMAIN
+          value: "azaktilza.firebaseapp.com"
+        - name: FIREBASE_DATABASE_URL
+          value: "https://azaktilza-default-rtdb.firebaseio.com"
+        - name: FIREBASE_PROJECT_ID
+          value: "azaktilza"
+        - name: FIREBASE_STORAGE_BUCKET
+          value: "azaktilza.firebasestorage.app"
+        - name: FIREBASE_MESSAGING_SENDER_ID
+          value: "177530289587"
+        - name: FIREBASE_APP_ID
+          value: "1:177530289587:web:8cafae94dee5abceb89fc6"
+        - name: FIREBASE_MEASUREMENT_ID
+          value: "G-JHBH0BWS3V"
+        - name: FIREBASE_CREDENTIALS_PATH
+          value: "azaktilsa-firebase-adminsdk.json"
+        
+        # Animal Models - CAMANOVILLO
+        - name: MODELO_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/model/modelo_CAMANOVILLO_random_forest.pkl"
+        - name: SCALER_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/scaler/scaler_CAMANOVILLO.pkl"
+        
+        # Animal Models - EXCANCRIGRU
+        - name: MODELO_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/model/modelo_EXCANCRIGRU_random_forest.pkl"
+        - name: SCALER_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/scaler/scaler_EXCANCRIGRU.pkl"
+        
+        # Animal Models - FERTIAGRO
+        - name: MODELO_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/model/modelo_FERTIAGRO_random_forest.pkl"
+        - name: SCALER_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/scaler/scaler_FERTIAGRO.pkl"
+        
+        # Animal Models - GROVITAL
+        - name: MODELO_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/model/modelo_GROVITAL_random_forest.pkl"
+        - name: SCALER_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/scaler/scaler_GROVITAL.pkl"
+        
+        # Animal Models - SUFAAZA
+        - name: MODELO_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/model/modelo_SUFAAZA_random_forest.pkl"
+        - name: SCALER_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/scaler/scaler_SUFAAZA.pkl"
+        
+        # Animal Models - TIERRAVID
+        - name: MODELO_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/model/modelo_TIERRAVID_random_forest.pkl"
+        - name: SCALER_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/scaler/scaler_TIERRAVID.pkl"
+        
+        # Rendimiento Path
+        - name: RENDIMIENTO_PATH
+          value: "https://azaktilza-default-rtdb.firebaseio.com/Empresas/TerrawaSufalyng/Rendimiento.json"
+        
+        # Alimentation Data
+        - name: PESOS_ALIMENTATION
+          value: "gs://azaktilsa_fincas/Data/pesos_alimento.json"
+        
+        # Alimentation Models - CAMANOVILLO
+        - name: MODELO_ALIMENTATION_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_CAMANOVILLO_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_CAMANOVILLO.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/selector/selector_CAMANOVILLO.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_CAMANOVILLO
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_CAMANOVILLO.pkl"
+        
+        # Alimentation Models - EXCANCRIGRU
+        - name: MODELO_ALIMENTATION_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_EXCANCRIGRU_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_EXCANCRIGRU.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/selector/selector_EXCANCRIGRU.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_EXCANCRIGRU
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_EXCANCRIGRU.pkl"
+        
+        # Alimentation Models - FERTIAGRO
+        - name: MODELO_ALIMENTATION_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_FERTIAGRO_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_FERTIAGRO.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/selector/selector_FERTIAGRO.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_FERTIAGRO
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_FERTIAGRO.pkl"
+        
+        # Alimentation Models - GROVITAL
+        - name: MODELO_ALIMENTATION_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_GROVITAL_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_GROVITAL.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/selector/selector_GROVITAL.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_GROVITAL
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_GROVITAL.pkl"
+        
+        # Alimentation Models - SUFAAZA
+        - name: MODELO_ALIMENTATION_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_SUFAAZA_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_SUFAAZA.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/selector/selector_SUFAAZA.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_SUFAAZA
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_SUFAAZA.pkl"
+        
+        # Alimentation Models - TIERRAVID
+        - name: MODELO_ALIMENTATION_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/modelalimentation/modelo_TIERRAVID_ensemble.pkl"
+        - name: SCALER_ALIMENTATION_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/scaleralimentation/scaler_TIERRAVID.pkl"
+        - name: SELECTOR_ALIMENTATION_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/selector/selector_TIERRAVID.pkl"
+        - name: YSCALERS_ALIMENTATION_PATH_TIERRAVID
+          value: "gs://azaktilsa_fincas/yscalers/y_scalers_TIERRAVID.pkl"
