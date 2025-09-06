@@ -768,56 +768,48 @@ class AquacultureCalculator:
     def parse_formatted_number(self, value_str) -> float:
         """
         Convierte una cadena formateada a número float
-        Maneja tanto formato inglés (punto decimal) como español (coma decimal)
+        Formato Flutter: "." para decimales y "," para miles
+        Ejemplos: 7.8, 30.0, 55042, 614.0, 1.32, 10.6
         """
         if value_str is None or not value_str or value_str == '':
             return 0.0
         try:
-            # Si es un número, convertir directamente
+            # Si ya es un número, convertir directamente
             if isinstance(value_str, (int, float)):
                 return float(value_str)
 
             # Convertir a string y limpiar espacios
             value_str = str(value_str).strip()
 
-            # Detectar formato según el contexto
-            # Si contiene tanto punto como coma, determinar cuál es decimal
-            if '.' in value_str and ',' in value_str:
-                # Si el punto está después de la coma, el punto es decimal (ej: "1,234.56")
-                if value_str.rfind('.') > value_str.rfind(','):
-                    # Formato inglés: coma=miles, punto=decimal
-                    return float(value_str.replace(',', ''))
-                else:
-                    # Formato español: punto=miles, coma=decimal
-                    return float(value_str.replace('.', '').replace(',', '.'))
+            if not value_str:
+                return 0.0
 
-            # Solo contiene punto
-            elif '.' in value_str:
-                # Determinar si es separador de miles o decimal
-                parts = value_str.split('.')
-                if len(parts) == 2 and len(parts[1]) <= 2:
-                    # Probablemente decimal (ej: "7.8", "30.00")
-                    return float(value_str)
-                else:
-                    # Probablemente separador de miles (ej: "1.234.567")
-                    return float(value_str.replace('.', ''))
+            # Remover caracteres no numéricos excepto punto, coma y signo menos
+            import re
+            clean_str = re.sub(r'[^\d.,-]', '', value_str)
 
-            # Solo contiene coma
-            elif ',' in value_str:
-                # Determinar si es separador de miles o decimal
-                parts = value_str.split(',')
-                if len(parts) == 2 and len(parts[1]) <= 2:
-                    # Probablemente decimal español (ej: "7,8", "30,00")
-                    return float(value_str.replace(',', '.'))
-                else:
-                    # Probablemente separador de miles (ej: "1,234,567")
-                    return float(value_str.replace(',', ''))
+            # Formato Flutter estándar:
+            # - Punto (.) siempre es decimal
+            # - Coma (,) siempre es separador de miles
+            # Ejemplos: "7.8", "55042", "614.0", "1.32", "55,042.0"
 
-            # Sin separadores especiales
+            if ',' in clean_str and '.' in clean_str:
+                # Formato con miles y decimales: "55,042.0"
+                clean_str = clean_str.replace(',', '')
+                return float(clean_str)
+            elif ',' in clean_str and '.' not in clean_str:
+                # Solo comas, son separadores de miles: "55,042"
+                clean_str = clean_str.replace(',', '')
+                return float(clean_str)
+            elif '.' in clean_str:
+                # Solo punto, es decimal: "7.8", "614.0"
+                return float(clean_str)
             else:
-                return float(value_str)
+                # Sin separadores: "55042"
+                return float(clean_str)
 
         except (ValueError, TypeError):
+            print(f"Error al convertir '{value_str}' a número, retornando 0.0")
             return 0.0
 
     def format_number(self, value: float) -> str:
@@ -832,8 +824,13 @@ class AquacultureCalculator:
         self.set_controller_value('sacos_actuales', f"{sacos:.2f}")
 
     def calcular_edad_cultivo(self):
-        """Calcula la edad del cultivo"""
+        """Calcula la edad del cultivo solo si no se proporcionó previamente"""
         try:
+            # Si ya hay una edad del cultivo establecida, no recalcular
+            edad_actual = self.get_controller_value('edad_cultivo')
+            if edad_actual and edad_actual != '0' and edad_actual != '':
+                return
+
             fecha_siembra_str = self.get_controller_value('fecha_siembra')
             fecha_muestreo_str = self.get_controller_value('fecha_muestreo')
 
@@ -863,16 +860,16 @@ class AquacultureCalculator:
             mas_uno = diferencia_dias + 1
             self.set_controller_value('edad_cultivo', str(mas_uno))
 
-            self.calcular_crecimiento_actual()
+            # NO llamar calcular_crecimiento_actual aquí para evitar duplicación
         except Exception as e:
             print(f'⚠️ Error en el cálculo de la edad del cultivo: {e}')
 
     def incremento_gr(self):
         """Calcula el incremento en gramos"""
         peso_actual = self.parse_formatted_number(
-            self.get_controller_value('pesoactualgdia'))
+            self.get_controller_value('peso_actual_gdia'))
         peso_anterior = self.parse_formatted_number(
-            self.get_controller_value('pesoanterior'))
+            self.get_controller_value('peso_anterior'))
 
         if peso_anterior == 0:
             self.set_controller_value('incremento_gr', "0.00")
@@ -1113,7 +1110,7 @@ class AquacultureCalculator:
     def calcular_crecimiento_actual(self):
         """Calcula el crecimiento actual"""
         peso_actual = self.parse_formatted_number(
-            self.get_controller_value('pesoactualgdia'))
+            self.get_controller_value('peso_actual_gdia'))
         peso_siembra = self.parse_formatted_number(
             self.get_controller_value('peso_siembra'))
         edad_cultivo = int(self.get_controller_value('edad_cultivo') or '0')
