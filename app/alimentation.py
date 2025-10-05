@@ -819,7 +819,7 @@ class AquacultureCalculator:
     def calcular_sacos_actuales(self):
         """Calcula los sacos actuales"""
         alimento_kg = self.parse_formatted_number(
-            self.get_controller_value('alimentoactualkg'))
+            self.get_controller_value('alimento_actual_kg'))
         sacos = alimento_kg / 25
         self.set_controller_value('sacos_actuales', f"{sacos:.2f}")
 
@@ -1235,7 +1235,7 @@ class AquacultureCalculator:
         consumo_text = self.get_controller_value(
             'densidad_consumo_im2').strip()
         biologo_text = self.get_controller_value(
-            'densidadbiologoindm2').strip()
+            'densidad_biologo_indm2').strip()
 
         try:
             densidad_consumo = float(consumo_text)
@@ -1272,7 +1272,7 @@ class AquacultureCalculator:
     def calcular_kg_100mil(self):
         """Calcula kg por 100 mil"""
         alimento_kg = self.parse_formatted_number(
-            self.get_controller_value('alimentoactualkg'))
+            self.get_controller_value('alimento_actual_kg'))
         hect = self.parse_formatted_number(
             self.get_controller_value('hectareas'))
         densidad_consumo = self.parse_formatted_number(
@@ -1326,11 +1326,11 @@ class AquacultureCalculator:
         """Calcula el valor para lunes día 1"""
         try:
             peso_actual_g = self.parse_formatted_number(
-                self.get_controller_value('pesoactualgdia'))
+                self.get_controller_value('peso_actual_gdia'))
             hectareaje = self.parse_formatted_number(
                 self.get_controller_value('hectareas'))
             densidad_biologo = self.parse_formatted_number(
-                self.get_controller_value('densidadbiologoindm2'))
+                self.get_controller_value('densidad_biologo_indm2'))
 
             # Usar 1.0 como valor por defecto si es 0, igual que Flutter
             if peso_actual_g == 0:
@@ -1406,7 +1406,7 @@ class AquacultureCalculator:
         hectareaje = self.parse_formatted_number(
             self.get_controller_value('hectareas'))
         densidad_biologo = self.parse_formatted_number(
-            self.get_controller_value('densidadbiologoindm2'))
+            self.get_controller_value('densidad_biologo_indm2'))
 
         if (peso_project is None or
             hectareaje is None or
